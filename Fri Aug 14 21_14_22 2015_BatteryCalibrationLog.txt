@@ -1,0 +1,1 @@
+Minutes Index | Status Register | Accumulated Charge | Voltage | Current

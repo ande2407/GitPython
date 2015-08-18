@@ -1,0 +1,3 @@
+Minutes Index | Status Register | Accumulated Charge | Voltage | Current
+0,0,47268,,9.75911192493,1.84679708243
+0,0,47286,,9.75991454948,1.84875026704
