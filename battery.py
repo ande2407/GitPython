@@ -7,18 +7,15 @@ import datetime
 # save stdout
 oldstdout = sys.stdout
 
+
 def ReadRegisterByte(reg):
 	# save stdout
 	oldstdout = sys.stdout
-
 	# call i2cget on the register (read as byte)
 	R = subprocess.Popen(('i2cget', '-y', '0', '0x64', str(reg), 'b'), stdout=subprocess.PIPE)
 	Routput = R.stdout.read()
-	#R.wait()
-
 	# return just the value, not the preamble or end. Should be 2 chars long [0xAB\n]. The 0 lets it be interpreted as hex
 	val = int(Routput[:4], 0)
-
 	#restore stdout
 	sys.stdout = oldstdout
 
@@ -28,7 +25,6 @@ def ProgramRegister(reg, value):
 
 	P = subprocess.Popen(('i2cset', '-y', '0', '0x64', str(reg), str(value), 'b'))
 	P.wait()
-
 	print "\tRegister %d set to %d" % (reg, value)
 
 	return
@@ -189,17 +185,22 @@ def MonitorBattery(verbose):
 			# low limit
 			CURRENT_ALARM = "Low limit exceeded - stay here until we are actually dead?"
 		elif status & 0x02:
-			# low voltage alarm. Shut down now!
-
-			CURRENT_ALARM =  "Low Voltage detected: %.2f" % voltage
-			with open(filename, "ab") as myfile:
-				s = '%d, %d, %d, %.3f, %.3f\n' %(dt, status, charge, voltage, current)
-				if CURRENT_ALARM:
-					s.append(CURRENT_ALARM + '\n')
+			# voltage alarm.
+			#if high, we should stop charging
+			if voltage > 9.1:
+				#stop charging somehow
+				CURRENT_ALARM =  "High Voltage detected: %.2f" % voltage
+			#if low, shut down.
+			else:
+				CURRENT_ALARM =  "Low Voltage detected: %.2f" % voltage
+				with open(filename, "ab") as myfile:
+					s = '%d, %d, %d, %.3f, %.3f\n' %(dt, status, charge, voltage, current)
+					if CURRENT_ALARM:
+						s += CURRENT_ALARM + '\n'
 				myfile.write(s)
 			# shut down here.
-			subprocess.call(('shutdown', '-h', 'now'))
-			sys.exit()
+				subprocess.call(('shutdown', '-h', 'now'))
+				sys.exit()
 		else:
 			CURRENT_ALARM = False
 
@@ -248,21 +249,25 @@ def MonitorBattery(verbose):
 	return
 
 def Initialize(state):
-	# Program low voltage threshold to 6v (1.0v per cell)
-	# MSB: 0x41, LSB: 0x16
-	# V(6.0) = 23.6 * (Vl/0xFFFF); Vl~16662
-	# V(6.6) = 23.6 * (Vl/0xFFFF); Vl~18327 (0x4797)
-	print "Program Low Voltage Level to 6.6V"
-	ProgramRegister(0x0C, 0x47)
-	ProgramRegister(0x0D, 0x97)
 
 	# Turn on ADC to scan once. It will be read at the next monitor loop.
 	# At the end of the monitor loop, restart scan
 	print "Start ADC Read"
 	ProgramRegister(0x01, (0x3C | 0x40))
 
+	# Set state to 1 if battery was disconnected, or is already charged
 	if (state):
-
+		# Program low voltage threshold to 6v (1.0v per cell)
+		# MSB: 0x41, LSB: 0x16
+		# V(6.0) = 23.6 * (Vl/0xFFFF); Vl~16662
+		# V(6.6) = 23.6 * (Vl/0xFFFF); Vl~18327 (0x4797)
+		print "Program Low Voltage Level to 6.6V"
+		ProgramRegister(0x0C, 0x47)
+		ProgramRegister(0x0D, 0x97)
+		#V(9.1) = 23.6 * (VH/0xFFF); VH~25270 (0x62B6)
+		print "Program High Voltage Level to 9.1V"
+		ProgramRegister(0x0A, 0x62)
+		ProgramRegister(0x0B, 0xB6)
 		# shutdown Analog Measure
 		print "presetting charge register to high value"
 		ProgramRegister(1, (0x3C | 0x01))
@@ -293,7 +298,7 @@ try:
 			print "Help menu\n\tUsage: \"python battery.py [-c | -h | -s | -v] [ -v (can only follow -s)]\""
 			print " -h : this menu "
 			print " -c : begin calibration cycle (being deprecated)"
-			print " -s : Set the battery to fully charged"
+			print " -s : Set the battery to fully charged, Init limit registers"
 			print " -v : Verbose. Print more to the console"
 			print " default: monitor mode "
 		elif sys.argv[1] == "-c":
@@ -315,7 +320,7 @@ try:
 			print "\nInvalid arguments. \n\tUsage: battery.py [-c | -h | -s | -v] [ -v (can only follow -s)]"
 			print " -h : Help menu "
 			print " -c : Begin calibration cycle (being deprecated) "
-			print " -s : Set the battery to be fully charged"
+			print " -s : Set the battery to be fully charged, Init limit registers"
 			print " -v : Verbose. Print more to the console"
 			print " default: monitor mode "
 except AttributeError as e:
