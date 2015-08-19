@@ -28,7 +28,7 @@ def ProgramRegister(reg, value):
 	print "\tRegister %d set to %d" % (reg, value)
 
 	return
-
+# Begin Not used Block: Keeping becuase there might be something useful to steal
 def CalibrateBattery():
 
 	print "Calibration mode, Initialize Threshold Registers"
@@ -137,7 +137,7 @@ def CalibrateBattery():
 		time.sleep(60)
 
 	return
-
+# end not used block
 
 def MonitorBattery(verbose):
 
@@ -150,8 +150,6 @@ def MonitorBattery(verbose):
 	while True:
 		# time we execute the read - minute indexed
 		dt = (int((time.time() - start) / 60))
-
-		# call i2cget on the charge register (read as word)
 
 		# get charge value
 		valHigh = ReadRegisterByte(2)
@@ -244,7 +242,17 @@ def MonitorBattery(verbose):
 		# At the end of the monitor loop, restart scan
 		print "Start ADC Read"
 		ProgramRegister(0x01, (0x3C | 0x40))
-		time.sleep(60)
+
+		#read faster if battery is dying
+		if (voltage < 7.2 or voltage > 9.05):
+			sleepVal = 5
+		elif (voltage < 7.3 or voltage > 9):
+			sleepVal = 15
+		elif (voltage < 7.2 or voltage > 8.9):
+			sleepVal = 30
+		else:
+			sleepVal = 60
+		time.sleep(sleepVal)
 
 	return
 
@@ -260,10 +268,10 @@ def Initialize(state):
 		# Program low voltage threshold to 6v (1.0v per cell)
 		# MSB: 0x41, LSB: 0x16
 		# V(6.0) = 23.6 * (Vl/0xFFFF); Vl~16662
-		# V(6.6) = 23.6 * (Vl/0xFFFF); Vl~18327 (0x4797)
-		print "Program Low Voltage Level to 6.6V"
-		ProgramRegister(0x0C, 0x47)
-		ProgramRegister(0x0D, 0x97)
+		# V(7.1) = 23.6 * (Vl/0xFFFF); Vl~19716 (0x4D04)
+		print "Program Low Voltage Level to 7.1V"
+		ProgramRegister(0x0C, 0x4D)
+		ProgramRegister(0x0D, 0x04)
 		#V(9.1) = 23.6 * (VH/0xFFF); VH~25270 (0x62B6)
 		print "Program High Voltage Level to 9.1V"
 		ProgramRegister(0x0A, 0x62)
@@ -297,14 +305,19 @@ try:
 		if sys.argv[1] == "-h":
 			print "Help menu\n\tUsage: \"python battery.py [-c | -h | -s | -v] [ -v (can only follow -s)]\""
 			print " -h : this menu "
-			print " -c : begin calibration cycle (being deprecated)"
-			print " -s : Set the battery to fully charged, Init limit registers"
+			print " -reset : resets accumulated charge register to 0x7FFF"
+			print " -set : Set the battery to fully charged, Init limit registers"
 			print " -v : Verbose. Print more to the console"
 			print " default: monitor mode "
-		elif sys.argv[1] == "-c":
-			Initialize(0)
-			CalibrateBattery()
-		elif sys.argv[1] == "-s":
+		elif sys.argv[1] == "-reset":
+			print "presetting charge register to middle value"
+			ProgramRegister(1, (0x3C | 0x01))
+			# Program Charge Registers
+			ProgramRegister(2,0x7F)
+			ProgramRegister(3,0xFF)
+			# Turn on Analog Measure
+			ProgramRegister(1, 0x3C)
+		elif sys.argv[1] == "-set":
 			Initialize(1)
 			if (len(sys.argv) >= 2):
 				if sys.argv[2] == "-v":
@@ -319,8 +332,8 @@ try:
 		else :
 			print "\nInvalid arguments. \n\tUsage: battery.py [-c | -h | -s | -v] [ -v (can only follow -s)]"
 			print " -h : Help menu "
-			print " -c : Begin calibration cycle (being deprecated) "
-			print " -s : Set the battery to be fully charged, Init limit registers"
+			print " -reset : resets accumulated charge register to 0x7FF"
+			print " -set : Set the battery to be fully charged, Init limit registers"
 			print " -v : Verbose. Print more to the console"
 			print " default: monitor mode "
 except AttributeError as e:

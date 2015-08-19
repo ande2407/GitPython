@@ -1,0 +1,32 @@
+Minutes Index, Status Register, Accumulated Charge, Voltage, Current
+0, 1, 62180, 7.840, 0.382
+1, 8, 62191, 7.841, 0.383
+high limit exceeded - Reset Threshold
+2, 8, 62203, 7.850, 0.382
+high limit exceeded - Reset Threshold
+3, 8, 62214, 7.858, 0.382
+high limit exceeded - Reset Threshold
+4, 8, 62226, 7.866, 0.382
+high limit exceeded - Reset Threshold
+5, 8, 62237, 7.872, 0.382
+high limit exceeded - Reset Threshold
+6, 8, 62248, 7.877, 0.382
+high limit exceeded - Reset Threshold
+7, 8, 62260, 7.883, 0.382
+high limit exceeded - Reset Threshold
+8, 8, 62271, 7.888, 0.381
+high limit exceeded - Reset Threshold
+9, 8, 62282, 7.892, 0.381
+high limit exceeded - Reset Threshold
+10, 8, 62294, 7.896, 0.381
+high limit exceeded - Reset Threshold
+11, 8, 62305, 7.901, 0.381
+high limit exceeded - Reset Threshold
+12, 8, 62317, 7.904, 0.381
+high limit exceeded - Reset Threshold
+13, 8, 62326, 7.908, 0.381
+high limit exceeded - Reset Threshold
+14, 8, 62379, 7.691, -0.001
+high limit exceeded - Reset Threshold
+15, 8, 62435, 8.371, 1.856
+high limit exceeded - Reset Threshold
